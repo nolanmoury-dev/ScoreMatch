@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="fr"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>FC Affichage</title>
+<style>
+*{box-sizing:border-box;margin:0}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:#0d1117;color:#e8edf3;line-height:1.5}
+a{color:#7fe3b0}
+.w{max-width:720px;margin:0 auto;padding:18px}
+h1{font-size:28px;margin-bottom:6px}h2{font-size:19px;margin:26px 0 8px}
+p,li{color:#b8c2cf;font-size:15px}li{margin:4px 0 4px 20px}
+.card{background:#161d27;border:1px solid #243041;border-radius:10px;padding:14px;margin:12px 0}
+code{background:#0a0e14;padding:2px 6px;border-radius:4px;color:#ffd84d;word-break:break-all}
+.btn{display:inline-block;background:#1f8f5f;color:#fff;border:0;border-radius:8px;padding:12px 16px;font-size:16px;font-weight:600;margin:4px 4px 4px 0;text-decoration:none;cursor:pointer}
+.btn.g{background:#2b3647}.btn.y{background:#e6b800;color:#111}.btn.r{background:#c0392b}.btn.s{padding:8px 12px;font-size:14px}
+input{width:100%;background:#0a0e14;color:#fff;border:1px solid #2b3647;border-radius:6px;padding:9px;font-size:15px;margin:3px 0}
+input[type=color]{width:46px;height:38px;padding:2px}
+.row{display:flex;gap:8px;align-items:center}.row>*{flex:1}.row>.fix{flex:none}
+.sc{font-size:46px;font-weight:800;text-align:center}
+/* overlay */
+body.ov{background:transparent;overflow:hidden;width:1920px;height:1080px;font-family:'Arial Narrow','Segoe UI',Arial,sans-serif}
+#bug{position:absolute;left:48px;top:40px;display:flex;height:56px;font-weight:800;font-size:30px;filter:drop-shadow(0 4px 10px #0008)}
+.tm{display:flex;align-items:center;background:#101820;color:#fff}
+.tm i{width:12px;height:100%}.tm b{padding:0 16px;letter-spacing:1px}
+.tm span{background:#fff;color:#101820;min-width:54px;text-align:center;padding:0 8px;line-height:56px}
+#ck{background:#ffd84d;color:#111;padding:0 16px;display:flex;flex-direction:column;justify-content:center;line-height:1}
+#ck small{font-size:13px;font-weight:700}
+.fl{animation:fl .3s 5 alternate}@keyframes fl{to{background:#ffd84d}}
+.ban{position:absolute;left:0;top:300px;width:1920px;height:130px;display:flex;align-items:stretch;animation:bn 4.6s forwards;overflow:hidden}
+.ban .tag{background:#ffd84d;color:#111;font:italic 900 78px 'Arial Black',Impact,sans-serif;padding:0 60px 0 80px;display:flex;align-items:center;transform:skewX(-14);margin-left:-40px}
+.ban .tag em{transform:skewX(14);font-style:italic}
+.ban .inf{background:#101820;color:#fff;flex:1;margin-left:-20px;padding:0 60px 0 70px;display:flex;flex-direction:column;justify-content:center;transform:skewX(-14);animation:inf .6s .5s both}
+.ban .inf>*{transform:skewX(14)}.inf strong{font-size:50px}.inf span{font-size:30px;color:#c9d3df}
+.g1{color:#4be08c}.r1{color:#ff6b5e}
+@keyframes bn{0%{transform:translateX(-110%)}10%{transform:translateX(0)}88%{transform:translateX(0)}100%{transform:translateX(110%)}}
+@keyframes inf{from{clip-path:inset(0 100% 0 0)}to{clip-path:inset(0)}}
+#low{position:absolute;left:48px;bottom:60px;width:760px;transform-origin:left;animation:lw .5s both}
+#low .h{background:var(--c);color:#fff;font:800 30px Arial;padding:10px 24px;width:max-content}
+#low .b{background:#101820ee;color:#fff;padding:18px 26px;font-size:36px;font-weight:700;border-left:10px solid var(--c)}
+#low .b small{display:block;font-size:20px;color:#9fb0c4;margin-bottom:4px}
+@keyframes lw{from{opacity:0;transform:translateY(40px)}}
+#side{position:absolute;right:48px;top:150px;width:520px;background:#101820ee;border-top:10px solid var(--c);animation:sd .7s both}
+#side h3{font:800 34px Arial;color:#fff;padding:14px 20px}
+@keyframes sd{from{transform:translateX(120%)}}
+</style></head><body>
+<div id="app"></div>
+<script>
+const Q=new URLSearchParams(location.search),M=Q.get('mode'),K='fca';
+const T=()=>({name:'',color:'#1f8f5f',f:'4-4-2',p:Array(11).fill('')});
+const D={a:{...T(),name:'Équipe A'},b:{...T(),name:'Équipe B',color:'#c0392b'},sa:0,sb:0,run:false,base:0,at:0,per:'1re mi-temps',show:null,ev:null,v:0};
+let S=JSON.parse(localStorage.getItem(K)||'null')||D;
+const bc=new BroadcastChannel(K),$=id=>document.getElementById(id),pad=n=>String(n).padStart(2,'0');
+const clock=()=>{const t=Math.floor(S.base+(S.run?(Date.now()-S.at)/1000:0));return pad(Math.floor(t/60))+':'+pad(t%60)};
+const ln=f=>[1,...f.split('-').map(Number)];
+const lines=t=>{const n=t.f.split('-').map(Number),L=['Gardien',...n.map((_,i)=>i==0?'Défenseurs':i==n.length-1?'Attaquants':'Milieux')],o=[];let k=0;[1,...n].forEach((c,i)=>{o.push({l:L[i],p:t.p.slice(k,k+c).map((x,j)=>({n:k+j+1,x:x||'—'}))});k+=c});return o};
+function save(ev){S.v=Date.now();if(ev)S.ev={id:S.v,...ev};const j=JSON.stringify(S);localStorage.setItem(K,j);bc.postMessage(j);fetch('/api/state',{method:'POST',headers:{'Content-Type':'application/json'},body:j}).catch(()=>{});if(M==='control')paintCtl()}
+/* ---------- OVERLAY ---------- */
+function overlay(){
+document.body.className='ov';let seen=S.ev&&S.ev.id,seq=0;
+$('app').innerHTML='<div id="bug"><div class="tm"><i id="ca"></i><b id="na"></b><span id="sa"></span></div><div class="tm"><b id="nb"></b><span id="sb"></span><i id="cb"></i></div><div id="ck"><div id="tm"></div><small id="pr"></small></div></div><div id="ban"></div><div id="zone"></div>';
+const ab=s=>(s||'').slice(0,3).toUpperCase();
+let shownA=S.sa,shownB=S.sb;
+function paint(){$('ca').style.background=S.a.color;$('cb').style.background=S.b.color;$('na').textContent=ab(S.a.name);$('nb').textContent=ab(S.b.name);$('sa').textContent=shownA;$('sb').textContent=shownB;$('pr').textContent=S.per;$('tm').textContent=clock()}
+function flash(id){const e=$(id);e.classList.add('fl');setTimeout(()=>e.classList.remove('fl'),1600)}
+function ban(tag,col,l1,l2){const d=document.createElement('div');d.className='ban';d.innerHTML=`<div class="tag" style="${col?'background:'+col:''}"><em>${tag}</em></div><div class="inf"><strong>${l1}</strong><span>${l2||''}</span></div>`;$('ban').appendChild(d);setTimeout(()=>d.remove(),4700)}
+function play(e){
+ if(e.type==='goal'){const t=S[e.team];ban('BUT !',null,`${e.who||t.name} ${e.min?e.min+"'":''}`,`${S.a.name} ${S.sa} - ${S.sb} ${S.b.name}`);setTimeout(()=>{shownA=S.sa;shownB=S.sb;paint();flash(e.team==='a'?'sa':'sb')},1400)}
+ else if(e.type==='card')ban(e.red?'CARTON ROUGE':'CARTON JAUNE',e.red?'#e0392b':'#ffd84d',e.who||'',S[e.team].name);
+ else if(e.type==='sub')ban('CHANGEMENT','#4be08c',`<span class="g1">▲ ${e.in||''}</span>`,`<span class="r1">▼ ${e.out||''}</span> · ${S[e.team].name}`);
+ else if(e.type==='txt')ban(e.text,null,`${S.a.name} ${S.sa} - ${S.sb} ${S.b.name}`,'')}
+function lineup(){const my=++seq,z=$('zone');z.innerHTML='';if(!S.show)return;const t=S[S.show],L=lines(t);let i=0;
+ const step=()=>{if(my!==seq)return;if(i<L.length){z.innerHTML=`<div id="low" style="--c:${t.color}"><div class="h">${t.name} · ${L[i].l}</div><div class="b">${L[i].p.map(p=>p.n+' '+p.x).join('&nbsp;&nbsp;&nbsp;')}</div></div>`;i++;setTimeout(step,2600)}else{z.innerHTML=`<div id="side" style="--c:${t.color}"><h3>${t.name} · ${t.f}</h3>${pitch(t,L)}</div>`}};step()}
+function pitch(t,L){const n=L.length-1;let o=`<svg viewBox="0 0 300 360" width="520"><rect width="300" height="360" fill="#2e8b4f"/>`;for(let i=0;i<9;i++)o+=`<rect y="${i*40}" width="300" height="20" fill="#fff1"/>`;
+ o+=`<g fill="none" stroke="#fffb" stroke-width="2"><rect x="10" y="10" width="280" height="340"/><rect x="70" y="250" width="160" height="100"/><rect x="115" y="305" width="70" height="45"/><path d="M110 10a40 40 0 0 0 80 0"/></g><rect x="125" y="350" width="50" height="8" fill="#fff"/>`;
+ L.forEach((r,i)=>{const y=i==0?318:250-(i-1)*(n>1?180/(n-1):0);r.p.forEach((p,j)=>{const x=(j+1)/(r.p.length+1)*300;o+=`<circle cx="${x}" cy="${y}" r="15" fill="${t.color}" stroke="#fff" stroke-width="2"/><text x="${x}" y="${y+5}" font-size="14" font-weight="800" fill="#fff" text-anchor="middle">${p.n}</text><text x="${x}" y="${y+31}" font-size="11.5" font-weight="700" fill="#fff" text-anchor="middle">${p.x.split(' ').pop().slice(0,11)}</text>`})});return o+'</svg>'}
+function apply(n){if(n.v<=S.v&&n.v!==S.v)return;const old=S;S=n;if(S.ev&&S.ev.id!==seen){seen=S.ev.id;play(S.ev)}else{shownA=S.sa;shownB=S.sb}
+ if(JSON.stringify([old.show,old.a,old.b])!==JSON.stringify([S.show,S.a,S.b])||!$('zone').innerHTML&&S.show)lineup();paint()}
+const take=s=>{try{const n=typeof s==='string'?JSON.parse(s):s;if(n&&n.v&&n.v>S.v)apply(n)}catch(e){}};
+bc.onmessage=e=>take(e.data);addEventListener('storage',e=>e.key===K&&take(e.newValue));
+setInterval(()=>fetch('/api/state',{cache:'no-store'}).then(r=>r.json()).then(take).catch(()=>{}),1000);
+setInterval(()=>$('tm').textContent=clock(),500);paint();lineup()}
+/* ---------- TÉLÉCOMMANDE ---------- */
+function control(){$('app').innerHTML='<div class="w" id="c"></div>';paintCtl()}
+function team(k){const t=S[k];return `<div class="card"><div class="row"><input data-k="${k}" data-f="name" value="${t.name}" placeholder="Nom de l'équipe"><input class="fix" type="color" data-k="${k}" data-f="color" value="${t.color}"><input class="fix" style="width:90px" data-k="${k}" data-f="f" value="${t.f}"></div>${t.p.map((x,i)=>`<input data-k="${k}" data-p="${i}" value="${x}" placeholder="Joueur ${i+1}">`).join('')}</div>`}
+function paintCtl(){if(document.activeElement&&document.activeElement.tagName==='INPUT')return;
+ const act=document.activeElement,keep=act&&act.dataset?act.dataset.k+(act.dataset.f||'')+(act.dataset.p||''):null;
+ const tools=k=>`<div class="card"><b>${S[k].name}</b> <button class="btn s" data-do="goal" data-t="${k}">⚽ But</button><button class="btn y s" data-do="card" data-t="${k}">Carton jaune</button><button class="btn r s" data-do="red" data-t="${k}">Carton rouge</button><button class="btn g s" data-do="sub" data-t="${k}">Changement</button><button class="btn g s" data-do="lu" data-t="${k}">Compos</button></div>`;
+ $('c').innerHTML=`<h1>Télécommande</h1><div class="card"><div class="sc">${S.sa} - ${S.sb}</div><div class="sc" style="font-size:30px">${clock()}</div><div style="text-align:center"><button class="btn" data-do="run">${S.run?'Pause':'Démarrer'} le chrono</button><button class="btn g" data-do="rst">Remettre à 0</button><button class="btn g" data-do="ht">Mi-temps</button><button class="btn g" data-do="p2">2e mi-temps</button><button class="btn g" data-do="ft">Fin</button><button class="btn g" data-do="hide">Masquer compos</button></div></div>${tools('a')}${tools('b')}<h2>Équipes et joueurs</h2><p>Le premier joueur est le gardien, puis de gauche à droite, défenseurs en premier.</p>${team('a')}${team('b')}<p><a href="?">Retour au guide</a></p>`}
+function cmd(e){const b=e.target.closest('[data-do]');if(!b)return;const d=b.dataset.do,k=b.dataset.t,pr=m=>prompt(m)||'';
+ if(d==='goal'){const w=pr('Buteur ?'),m=pr('Minute ?');S['s'+k]++;save({type:'goal',team:k,who:w,min:m})}
+ else if(d==='card'||d==='red')save({type:'card',team:k,who:pr('Joueur ?'),red:d==='red'});
+ else if(d==='sub')save({type:'sub',team:k,out:pr('Joueur qui sort ?'),in:pr('Joueur qui entre ?')});
+ else if(d==='lu'){S.show=k;save()}else if(d==='hide'){S.show=null;save()}
+ else if(d==='run'){S.base=S.run?S.base+(Date.now()-S.at)/1000:S.base;S.at=Date.now();S.run=!S.run;save()}
+ else if(d==='rst'){S.base=0;S.at=Date.now();S.run=false;save()}
+ else if(d==='ht'){S.per='Mi-temps';S.base=S.run?S.base+(Date.now()-S.at)/1000:S.base;S.run=false;save({type:'txt',text:'MI-TEMPS'})}
+ else if(d==='p2'){S.per='2e mi-temps';S.base=Math.max(S.base,2700);S.at=Date.now();S.run=true;save({type:'txt',text:'2E MI-TEMPS'})}
+ else if(d==='ft'){S.per='Terminé';S.base=S.run?S.base+(Date.now()-S.at)/1000:S.base;S.run=false;save({type:'txt',text:'FIN DU MATCH'})}}
+function edit(e){const i=e.target,k=i.dataset.k;if(!k)return;if(i.dataset.p!==undefined)S[k].p[+i.dataset.p]=i.value;else S[k][i.dataset.f]=i.value;S.v=Date.now();const j=JSON.stringify(S);localStorage.setItem(K,j);bc.postMessage(j);clearTimeout(edit.t);edit.t=setTimeout(()=>save(),500)}
+/* ---------- GUIDE ---------- */
+function guide(){const b=location.origin+location.pathname;
+$('app').innerHTML=`<div class="w"><h1>FC Affichage</h1><p>Score, chrono, buts, cartons, changements et compos, à afficher par-dessus ton match Xbox dans OBS.</p>
+<div class="card"><a class="btn" href="?mode=control">Ouvrir la télécommande</a><a class="btn g" href="?mode=overlay" target="_blank">Voir l'affichage</a></div>
+<h2>Tes deux adresses</h2><div class="card"><p>Télécommande (téléphone ou PC) :<br><code>${b}?mode=control</code></p><p style="margin-top:8px">Affichage (OBS) :<br><code>${b}?mode=overlay</code></p></div>
+<h2>1. Mettre l'image de la Xbox dans OBS</h2><ul><li>Allume la Xbox, ouvre l'appli Xbox sur PC et lance « Jouer depuis la console ».</li><li>Dans OBS : Sources, <code>+</code>, <b>Capture de fenêtre</b>, choisis la fenêtre Xbox, décoche « Capturer le curseur ».</li><li>Agrandis l'image pour remplir toute la scène.</li></ul>
+<h2>2. Ajouter l'affichage par-dessus</h2><ul><li>Sources, <code>+</code>, <b>Navigateur</b>, nom « Affichage ».</li><li>URL : l'adresse d'affichage ci-dessus. Largeur <code>1920</code>, hauteur <code>1080</code>.</li><li>Place cette source <b>au-dessus</b> de la capture Xbox dans la liste. Le fond est transparent.</li></ul>
+<h2>3. Piloter le match</h2><ul><li><b>Sur téléphone</b> : ouvre l'adresse de télécommande. Il faut que le site soit en ligne (voir plus bas).</li><li><b>Sur le PC seul</b> : OBS, menu Docks, Docks de navigateur personnalisés, ajoute la télécommande. Elle apparaît dans OBS, sans rien installer de plus.</li><li>Remplis les équipes une fois, puis touche But, Carton, Changement ou Compos pendant le match.</li></ul>
+<h2>4. Envoyer sur Discord</h2><ul><li>Dans OBS : <b>Démarrer la caméra virtuelle</b>.</li><li>Dans Discord : Paramètres, Voix et vidéo, caméra : <b>OBS Virtual Camera</b>, puis lance ta caméra dans le salon.</li><li>Autre option : partage d'écran Discord sur la fenêtre OBS.</li></ul>
+<h2>Mettre le site en ligne (gratuit)</h2><div class="card"><ul><li>Mets <code>index.html</code> et le dossier <code>api</code> (fichier <code>state.js</code>) dans un dépôt GitHub, puis importe-le sur Vercel.</li><li>Dans Vercel, Settings, Environment Variables : ajoute <code>UPSTASH_REDIS_REST_URL</code> et <code>UPSTASH_REDIS_REST_TOKEN</code> (ceux de ta base Upstash).</li><li>Sans ce serveur, la télécommande et l'affichage ne communiquent que sur le même appareil (par exemple dans OBS).</li><li>Garde l'adresse du site pour toi : toute personne qui la connaît peut piloter l'affichage.</li></ul></div>
+<h2>Si l'image se fige quand tu quittes l'appli Xbox</h2><p>L'appli se met en pause quand elle perd le focus. Prépare OBS et Discord avant, clique sur la fenêtre Xbox en dernier, puis pilote tout depuis le téléphone.</p></div>`}
+if(M==='overlay')overlay();else if(M==='control'){control();$('c').addEventListener('click',cmd);$('c').addEventListener('input',edit);addEventListener('storage',e=>{if(e.key===K){S=JSON.parse(e.newValue)}});setInterval(()=>{if(!document.activeElement||document.activeElement.tagName!=='INPUT')paintCtl()},1000)}else guide();
+</script></body></html>
